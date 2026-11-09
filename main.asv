@@ -1,10 +1,38 @@
 clc; clear; close all;
 
-U = 3; % Ship's velocity
-g = 9.796; % Gravitational Acceleration (in Boulder, CO)
-H = [0.1, 0.25, 0.5, 0.75, 1]; % Depths to test
-Fr = U / sqrt(g * H); % Froude Number
+pts = 100; % Check points in pts x pts grid
 
-% Calculate the formula
-a = k*H*Fr*Fr/tanh(k*H) - 1;
-b = 
+U = linspace(0.1, 3, pts); % Ship's velocity
+g = 9.796; % Gravitational Acceleration (in Boulder, CO)
+H = linspace(0.1, 3, pts); % Depths to test
+
+% Define k as a sweeping array rather than a single scalar
+k = linspace(0.1, 50, 2000); 
+
+% Pre-allocate an array to store the maximum wake angle for each depth
+wake_angles = zeros(pts); 
+
+for i = 1:pts
+    for j = 1:pts
+        Fr = U(j) / sqrt(g * H(i)); % Calculate Fr for current depth
+        
+        % Evaluate your formula using the k array and the current H(i)
+        a = k.*H(i).*Fr.*Fr./tanh(k*H(i)) - 1;
+        b = 1 + 2.*k.*H(i)./sinh(2*k*H(i));
+        
+        % Note: Some k values might make 'a' negative, resulting in imaginary numbers.
+        % You only want to calculate y and x where a >= 0.
+        valid = a >= 0;
+        
+        y = sqrt(a(valid)) .* b(valid);
+        x = 2 + 2.*a(valid) - b(valid);
+        
+        xi = atan2(y, x); 
+        
+        % The actual wake angle is the maximum ray angle for this depth
+        wake_angles(i, j) = max(xi) * (180/pi); % Storing in degrees
+    end
+end
+
+disp('Wake Angles (degrees) for each depth:');
+disp(wake_angles);
